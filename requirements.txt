@@ -1,0 +1,4 @@
+Flask==2.2.3
+Flask_Bootstrap==3.3.7.1
+python-dotenv==1.0.0
+wyze_sdk==1.10.0

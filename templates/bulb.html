@@ -1,0 +1,73 @@
+<html>
+<head>
+    <title>Wyze Bulb {{ bulb.nickname }}</title>
+</head>
+<body>
+
+{% if bulb %}
+    <h1>{{ bulb.nickname }}</h1>
+
+    <h3>Info</h3>
+    <p>Is on: {{ bulb.is_on }}</p>
+    <p>
+    {% if bulb.is_on %}
+        <a href="{{ url_for('bulb_set', mac=bulb.mac, model=bulb.product.model, q='off')  }}">Turn Off</a>
+    {% else %}
+        <a href="{{ url_for('bulb_set', mac=bulb.mac, model=bulb.product.model, q='on')  }}">Turn On</a>
+    {% endif %}
+    </p>
+
+    <p>Brightness: {{ bulb.brightness }}</p>
+    <p>
+        <a href="{{ url_for('bulb_set', mac=bulb.mac, model=bulb.product.model, q='10%')  }}">10%</a>
+        <a href="{{ url_for('bulb_set', mac=bulb.mac, model=bulb.product.model, q='25%')  }}">25%</a>
+        <a href="{{ url_for('bulb_set', mac=bulb.mac, model=bulb.product.model, q='50%')  }}">50%</a>
+        <a href="{{ url_for('bulb_set', mac=bulb.mac, model=bulb.product.model, q='75%')  }}">75%</a>
+        <a href="{{ url_for('bulb_set', mac=bulb.mac, model=bulb.product.model, q='100%')  }}">100%</a>
+    </p>
+
+    <p>Temp: {{ bulb.color_temp }}K</p>
+    <p>
+        <a href="{{ url_for('bulb_set', mac=bulb.mac, model=bulb.product.model, q='1800k')  }}">1800 (Candle)</a>
+        <a href="{{ url_for('bulb_set', mac=bulb.mac, model=bulb.product.model, q='3000k')  }}">3000 (Warm White)</a>
+        <a href="{{ url_for('bulb_set', mac=bulb.mac, model=bulb.product.model, q='4300k')  }}">4300 (Cool White)</a>
+        <a href="{{ url_for('bulb_set', mac=bulb.mac, model=bulb.product.model, q='6500k')  }}">6500 (Daylight)</a>
+    </p>
+
+    <p>Color: {{ bulb.color }}</p>
+    <p>
+        <a href="{{ url_for('bulb_set', mac=bulb.mac, model=bulb.product.model, q='ff0000')  }}">Red</a>
+        <a href="{{ url_for('bulb_set', mac=bulb.mac, model=bulb.product.model, q='00ff00')  }}">Green</a>
+        <a href="{{ url_for('bulb_set', mac=bulb.mac, model=bulb.product.model, q='0000ff')  }}">Blue</a>
+    </p>
+
+    <h3>Form</h3>
+    <form action="{{ url_for('bulb_set', mac=bulb.mac, model=bulb.product.model) }}" method="post">
+        On/Off: <input type="radio" name="onoff" value="on" {% if bulb.is_on %} checked {% endif %}/>
+        <input type="radio" name="onoff" value="off" {% if not bulb.is_on %} checked {% endif %}/><br />
+        Brightness: <input type="text" name="brightness" value="{{ bulb.brightness }}" /><br />
+        Temperature: <input type="text" name="temp" value="{{ bulb.color_temp }}" /><br />
+        Color: <input type="text" name="color" value="{{ bulb.color }}" /><br />
+        <input type="submit" />
+    </form>
+
+    <h3>Examples</h3>
+    <p><a href="{{ url_for('bulb_set', mac=bulb.mac, model=bulb.product.model, q='off') }}">turn off</a></p>
+    <p><a href="{{ url_for('bulb_set', mac=bulb.mac, model=bulb.product.model, q='on') }}">turn on</a></p>
+    <p><a href="{{ url_for('bulb_set', mac=bulb.mac, model=bulb.product.model, q='50%,3000k') }}">50% warm white</a></p>
+    <p><a href="{{ url_for('bulb_set', mac=bulb.mac, model=bulb.product.model, q='50%;00ff00') }}">50% green</a></p>
+
+    <h3>Network</h3>
+    <p>IP: {{ bulb.ip }}</p>
+    <p>SSID: {{ bulb.ssid }}</p>
+    <p>Online: {{ bulb.is_online }}</p>
+    <p>Firmware: {{ bulb.firmware_version }}</p>
+    <p>ENR: {{ bulb._enr }}</p>
+    <p>MAC: {{ bulb.mac }}</p>
+    <p>Model: {{ bulb.product.model }}</p>
+{% endif %}
+
+<p><strong>{{ message }}</strong></p>
+
+</body>
+</html>

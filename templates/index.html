@@ -1,0 +1,17 @@
+<html>
+<head>
+    <title>Wyze Bulbs</title>
+</head>
+<body>
+{% if bulbs %}
+  <h1>Bulbs</h1>
+  <ul>
+    {% for device in bulbs %}
+        <li><a href="{{ url_for('bulb_get', mac=device.mac) }}">{{ device.nickname }}</a></li>
+    {% endfor %}
+  </ul>
+{% endif %}
+
+<p><strong>{{ message }}</strong></p>
+</body>
+</html>
