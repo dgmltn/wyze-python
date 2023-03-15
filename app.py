@@ -9,6 +9,7 @@ from Crypto.Util.Padding import pad, unpad
 from base64 import b64decode
 from base64 import b64encode
 
+import json
 import requests
 import os
 import sys
@@ -21,6 +22,20 @@ app.config['SECRET_KEY'] = os.environ.get("CSRF_SECRET_KEY")
 
 cached_client_expiration = 0
 cached_client_ttl = 60 * 60 * 12
+
+class AESCipher:
+    def __init__(self, key, iv):
+        self.key = key.encode('utf8')
+        self.iv = iv.encode('utf8')
+
+    def encrypt(self, data):
+        self.cipher = AES.new(self.key, AES.MODE_CBC, self.iv)
+        return b64encode(self.cipher.encrypt(pad(data.encode('utf-8'), AES.block_size))).decode('utf-8')
+
+    def decrypt(self, data):
+        raw = b64decode(data)
+        self.cipher = AES.new(self.key, AES.MODE_CBC, self.iv)
+        return unpad(self.cipher.decrypt(raw), AES.block_size).decode('utf-8')
 
 def get_client():
     global cached_client_expiration
@@ -36,40 +51,47 @@ def send_local_post(ip, mac, enr):
     characteristics = """
 {{
     "mac": "{mac}",
-    "index": "1",
-    "ts": {ts},
+    "index": "0",
+    "ts": "{ts}",
     "plist": [
         {{
             "pid": "P3",
             "pvalue": "1"
+        }},
+        {{
+            "pid": "P1507",
+            "pvalue": "ff00ff"
+        }},
+        {{
+            "pid": "P1501",
+            "pvalue": "100"
         }}
     ]
-}}""".format(mac=mac, ts=int(time.time()))
+}}""".format(mac=mac, ts=int(time.time() * 1000))
 
-        #}},
-        #{{
-        #    "pid": "P1507",
-        #    "pvalue": "0000ff"
-        #}},
-        #{{
-        #    "pid": "P1501",
-        #    "pvalue": "100"
+    # P3 - on/off (1 = on, 0 = off)
+    # P1501 - brightness (0 - 100)
+    # P1502 - temperature (1000 - 6000)
+    # P1507 - rgb (00ff00)
 
-    print(f"characteristics: {characteristics}", file=sys.stderr)
+    encrypted = AESCipher(enr, enr).encrypt(characteristics)
+    #decrypted = AESCipher(enr, enr).decrypt(encrypted)
 
-    key = enr.encode('utf8')
-    cipher = AES.new(key, AES.MODE_CBC, key)
-    encrypted = b64encode(cipher.encrypt(pad(characteristics.encode('utf-8'), AES.block_size))).decode('utf-8')
-
-    print(f"encrypted: {encrypted}", file=sys.stderr)
-    response = requests.post(f'http://{ip}:88/device_request', json={
+    body = {
         "request": "set_status",
         "isSendQueue": 0,
         "characteristics": encrypted
-    })
+    }
+    bodyString = json.dumps(body,separators=(',', ':'))
+    print(f"bodyString: {bodyString}")
+    headers = {
+        "Content-Type": "application/json",
+        "Content-Length": str(len(bodyString)),
+    }
+    response = requests.post(f'http://{ip}:88/device_request', headers=headers, data=bodyString)
     print(response.__dict__, file=sys.stderr)
 
-@app.route('/localtest')
+@app.route('/testlocal')
 def localtest():
     # console light:
     #send_local_post("10.5.27.4", "7C78B2212876", "QvoMI4VyzSn7oXDw")
