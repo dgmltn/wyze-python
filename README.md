@@ -18,3 +18,6 @@ Install all dependencies:
 
 Local Control:
 https://forums.wyze.com/t/wyze-local-api-encoding-changes/206479
+
+Python crypto example:
+https://gist.github.com/lopes/168c9d74b988391e702aac5f4aa69e41

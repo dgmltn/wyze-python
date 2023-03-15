@@ -2,19 +2,86 @@ from flask import Flask, render_template, redirect, url_for, request
 from dotenv import load_dotenv
 from wyze_sdk import Client
 from wyze_sdk.errors import WyzeApiError
+
+from hashlib import md5
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import pad, unpad
+from base64 import b64decode
+from base64 import b64encode
+
+import requests
 import os
 import sys
 import re
+import time
 
 load_dotenv()
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get("CSRF_SECRET_KEY")
 
-#TODO: re-login every 24 hours (or periodically)
-client = Client(email=os.environ.get("WYZE_USER"), password=os.environ.get("WYZE_PASSWORD"))
+cached_client_expiration = 0
+cached_client_ttl = 60 * 60 * 12
+
+def get_client():
+    global cached_client_expiration
+    global cached_client_ttl
+    global cached_client
+    now = time.time()
+    if now > cached_client_expiration:
+        cached_client = Client(email=os.environ.get("WYZE_USER"), password=os.environ.get("WYZE_PASSWORD"))
+        cached_client_expiration = now + cached_client_ttl
+    return cached_client
+
+def send_local_post(ip, mac, enr):
+    characteristics = """
+{{
+    "mac": "{mac}",
+    "index": "1",
+    "ts": {ts},
+    "plist": [
+        {{
+            "pid": "P3",
+            "pvalue": "1"
+        }}
+    ]
+}}""".format(mac=mac, ts=int(time.time()))
+
+        #}},
+        #{{
+        #    "pid": "P1507",
+        #    "pvalue": "0000ff"
+        #}},
+        #{{
+        #    "pid": "P1501",
+        #    "pvalue": "100"
+
+    print(f"characteristics: {characteristics}", file=sys.stderr)
+
+    key = enr.encode('utf8')
+    cipher = AES.new(key, AES.MODE_CBC, key)
+    encrypted = b64encode(cipher.encrypt(pad(characteristics.encode('utf-8'), AES.block_size))).decode('utf-8')
+
+    print(f"encrypted: {encrypted}", file=sys.stderr)
+    response = requests.post(f'http://{ip}:88/device_request', json={
+        "request": "set_status",
+        "isSendQueue": 0,
+        "characteristics": encrypted
+    })
+    print(response.__dict__, file=sys.stderr)
+
+@app.route('/localtest')
+def localtest():
+    # console light:
+    #send_local_post("10.5.27.4", "7C78B2212876", "QvoMI4VyzSn7oXDw")
+    # bedside bulb:
+    send_local_post("10.5.27.7", "7C78B21DFC9F", "bxJs6+NdUP9KOv9h")
+
+    return "ok", 200
+
 
 @app.route('/')
-def get_lights():  # put application's code here
+def get_lights():
+    client = get_client()
     message = ''
     try:
         response = client.bulbs.list()
@@ -27,6 +94,7 @@ def get_lights():  # put application's code here
 
 @app.route('/bulb/<mac>')
 def bulb_get(mac):
+    client = get_client()
     message = ''
     try:
         response = client.bulbs.info(device_mac=mac)
@@ -39,6 +107,7 @@ def bulb_get(mac):
 
 @app.route('/bulb/set/<mac>/<model>', methods = ['GET', 'POST'])
 def bulb_set(mac, model):
+    client = get_client()
     try:
         if 'onoff' in request.values and request.values['onoff']:
             onoff = request.values['onoff']
