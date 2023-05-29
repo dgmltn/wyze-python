@@ -113,8 +113,9 @@ def get_lights():
     client = get_client()
     message = ''
     try:
-        response = client.bulbs.list()
-        return render_template('index.html', bulbs=response, message=message)
+        bulbs_list = client.bulbs.list()
+        vacuums_list = client.vacuums.list()
+        return render_template('index.html', bulbs=bulbs_list, vacuums=vacuums_list, message=message)
 
     except WyzeApiError as e:
         message = e
@@ -217,6 +218,42 @@ def bulb_set(mac):
     return "ok", 200
     #return redirect(url_for("bulb_get", mac=mac))
 
+@app.route('/vacuum/<mac>')
+def vacuum_get(mac):
+    client = get_client()
+    message = ''
+    try:
+        from wyze_sdk.models.devices import VacuumMode
+        vacuum = client.vacuums.info(device_mac=mac)
+        print(vacuum.__dict__, file=sys.stderr)
+        return render_template('vacuum.html', mac=mac, vacuum=vacuum, vacuum_mode=VacuumMode, message=message)
+
+    except WyzeApiError as e:
+        return render_template('error.html', error=e)
+
+@app.route('/vacuum/set/<mac>', methods = ['GET', 'POST'])
+def vacuum_set(mac):
+    client = get_client()
+    try:
+        print(mac)
+        vacuum = client.vacuums.info(device_mac=mac)
+        print(vacuum.__dict__, file=sys.stderr)
+
+        if 'q' in request.values and request.values['q']:
+            q = request.values['q']
+            if (q == 'clean'):
+                client.vacuums.clean(device_mac=mac, device_model=vacuum.product.model)
+            elif (q == 'pause'):
+                client.vacuums.pause(device_mac=mac, device_model=vacuum.product.model)
+            elif (q == 'resume'):
+                client.vacuums.resume(device_mac=mac, device_model=vacuum.product.model)
+            elif (q == 'dock'):
+                client.vacuums.dock(device_mac=mac, device_model=vacuum.product.model)
+
+    except WyzeApiError as e:
+        return render_template('error.html', error=e)
+
+    return "ok", 200
 
 
 if __name__ == '__main__':

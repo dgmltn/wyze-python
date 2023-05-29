@@ -1,0 +1,35 @@
+<html>
+<head>
+    <title>Wyze Vacuum {{ vacuum.nickname }}</title>
+</head>
+<body>
+
+{% if vacuum %}
+    <h1>{{ vacuum.nickname }}</h1>
+
+    <h3>Info</h3>
+    <p>
+        Mode: {{ vacuum.mode }}
+        {% if vacuum.mode == vacuum_mode.CLEANING %}
+            <a href="{{ url_for('vacuum_set', mac=mac, q='pause') }}">pause</a>
+            <a href="{{ url_for('vacuum_set', mac=mac, q='dock') }}">dock</a>
+        {% elif vacuum.mode == vacuum_mode.PAUSED %}
+            <a href="{{ url_for('vacuum_set', mac=mac, q='resume') }}">resume</a>
+            <a href="{{ url_for('vacuum_set', mac=mac, q='dock') }}">dock</a>
+        {% elif vacuum.mode == vacuum_mode.IDLE %}
+            <a href="{{ url_for('vacuum_set', mac=mac, q='clean') }}">clean</a>
+        {% endif %}
+    </p>
+    <p>Current Position: {{ vacuum.current_position }}</p>
+    <p>Product: {{ vacuum.product }}</p>
+    <p>Rooms: 
+    {% for room in vacuum.current_map.rooms %}
+        <a href="{{ room.id }}">{{ room.name }}</a>
+    {% endfor %}
+    </p>
+{% endif %}
+
+<p><strong>{{ message }}</strong></p>
+
+</body>
+</html>

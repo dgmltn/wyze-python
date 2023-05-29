@@ -12,6 +12,15 @@
   </ul>
 {% endif %}
 
+{% if vacuums %}
+  <h1>Vacuums</h1>
+  <ul>
+    {% for device in vacuums %}
+        <li><a href="{{ url_for('vacuum_get', mac=device.mac) }}">{{ device.nickname }}</a></li>
+    {% endfor %}
+  </ul>
+{% endif %}
+
 <p><strong>{{ message }}</strong></p>
 </body>
 </html>
